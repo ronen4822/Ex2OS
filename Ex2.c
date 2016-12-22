@@ -15,7 +15,6 @@
 
 pthread_mutex_t mutex;
 pthread_mutex_t internalCountMutex;
-pthread_mutex_t isOver;
 
 int internal_count;
 char list[2048] = { '\0' };
@@ -37,7 +36,7 @@ char pop() {
 }
 void push(char charToPush) {
 	pthread_mutex_lock(&mutex);
-	for (int i = lastElement + 1; i > 0; ++i) {
+	for (int i = lastElement + 1; i > 0; --i) {
 		list[i] = list[i - 1];
 	}
 	list[0] = charToPush;
@@ -46,24 +45,21 @@ void push(char charToPush) {
 }
 void* threadedFunction(void* arg) {
 	while (1) {
-		pthread_mutex_lock(&isOver);
-		if (finish==1)
+                char tmp = pop();
+		if (finish && tmp == '\0')
 		{
-			pthread_mutex_unlock(&isOver);
 			pthread_mutex_lock(&internalCountMutex);
 			printf("%d\n", internal_count);
 			pthread_mutex_unlock(&internalCountMutex);
 			pthread_exit(NULL);
 		}
-		pthread_mutex_unlock(&isOver);
-		pthread_mutex_lock(&mutex);
-		int tmpLast = lastElement;
-		pthread_mutex_unlock(&mutex);
 		struct timespec tim;
 		tim.tv_sec=0;
-		if (tmpLast != -1) {
-			char tmp = pop();
-			if (tmp != '\0') {
+			if (tmp == '\0') {
+                           tim.tv_nsec=0;
+                           nanosleep(&tim, NULL);
+                           continue;
+                         }
 				switch (tmp) {
 				case '1':
 					tim.tv_nsec=100;
@@ -106,8 +102,6 @@ void* threadedFunction(void* arg) {
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				}
-			}
-		}
 	}
 }
 int main(void) {
@@ -116,7 +110,6 @@ int main(void) {
 	char receivedVal;
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&internalCountMutex, NULL);
-	pthread_mutex_init(&isOver, NULL);
 	pthread_t tid[5];
 	for (int i = 0; i < 5; ++i) {
 		if (pthread_create(&(tid[i]), NULL, threadedFunction, NULL) != 0) {
@@ -125,7 +118,7 @@ int main(void) {
 	}
 	while (1) {
 		receivedVal = getchar();
-		char backSlashN=getchar();// for the \n
+		getchar();// for the \n
 		if (receivedVal == '7') {
 			//kill all threads
 			for (int i=0;i<5;++i)
@@ -138,14 +131,11 @@ int main(void) {
 			exit(0);
 		}
 		if (receivedVal == '8') {
-			pthread_mutex_lock(&isOver);
 			finish=1;
-			pthread_mutex_unlock(&isOver);
 			for (int i=0;i<5;++i)
 			{
 				pthread_join(tid[i],NULL);
 			}
-			pthread_mutex_destroy(&isOver);
 			pthread_mutex_destroy(&mutex);
 			pthread_mutex_destroy(&internalCountMutex);
 			printf("%d\n",internal_count);
