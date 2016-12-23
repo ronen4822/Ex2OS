@@ -62,35 +62,35 @@ void* threadedFunction(void* arg) {
                          }
 				switch (tmp) {
 				case '1':
-					tim.tv_nsec=100;
+					tim.tv_nsec=100000000L;
 					nanosleep(&tim,NULL);
 					pthread_mutex_lock(&internalCountMutex);
 					internal_count += 1;
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				case '2':
-					tim.tv_nsec=200;
+					tim.tv_nsec=200000000L;
 					nanosleep(&tim,NULL);
 					pthread_mutex_lock(&internalCountMutex);
 					internal_count += 2;
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				case '3':
-					tim.tv_nsec=300;
+					tim.tv_nsec=300000000L;
 					nanosleep(&tim,NULL);
 					pthread_mutex_lock(&internalCountMutex);
 					internal_count += 3;
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				case '4':
-					tim.tv_nsec=400;
+					tim.tv_nsec=400000000L;
 					nanosleep(&tim,NULL);
 					pthread_mutex_lock(&internalCountMutex);
 					internal_count += 4;
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				case '5':
-					tim.tv_nsec=500;
+					tim.tv_nsec=500000000L;
 					nanosleep(&tim,NULL);
 					pthread_mutex_lock(&internalCountMutex);
 					internal_count += 5;
