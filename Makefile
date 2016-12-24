@@ -1,14 +1,14 @@
 CC=gcc
 CFLAGS=-c -pthread -Wall -g
 LIBS=-pthread -lpthread -g
-OBJS=Ex2.o
-SRC=Ex2.c
+OBJS=main.o
+SRC=main.c
 
-ex2: $(OBJS)
-	$(CC) $(OBJS) -o ex2 $(LIBS)
+a.out: $(OBJS)
+	$(CC) $(OBJS) -o a.out $(LIBS)
 
 main.o: $(SRC)
 	$(CC) $(CFLAGS) $(SRC)
 
 clean:
-	rm -f $(OBJS) ex2
+	rm -f $(OBJS) a.out

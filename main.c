@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
+#include <unistd.h>
 
 pthread_mutex_t mutex;
 pthread_mutex_t internalCountMutex;
@@ -36,7 +37,8 @@ char pop() {
 }
 void push(char charToPush) {
 	pthread_mutex_lock(&mutex);
-	for (int i = lastElement + 1; i > 0; --i) {
+	int i;
+	for (i = lastElement + 1; i > 0 && i < sizeof(list)-1; --i) {
 		list[i] = list[i - 1];
 	}
 	list[0] = charToPush;
@@ -101,8 +103,23 @@ void* threadedFunction(void* arg) {
 					printf("%d\n", internal_count);
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
-				}
+				default:
+					break;
+				}				
 	}
+}
+int myGetLine(char* buffer, int bufferSize) {
+	int num_chars = 0;
+	int ch;
+	do {
+		ch = getc(stdin);
+	} while (ch == '\n');
+
+	for (; ch != EOF && ch != '\n'; ch = getc(stdin)) {
+		buffer[num_chars++] = ch;
+	}
+	buffer[num_chars] = '\0';
+	return num_chars;
 }
 int main(void) {
 	lastElement = -1; //indicates that the list is empty
@@ -111,17 +128,38 @@ int main(void) {
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_init(&internalCountMutex, NULL);
 	pthread_t tid[5];
-	for (int i = 0; i < 5; ++i) {
+	int i;
+	for (i = 0; i < 5; ++i) {
 		if (pthread_create(&(tid[i]), NULL, threadedFunction, NULL) != 0) {
 			printf("Failed to create thread #%d\n", i);
 		}
 	}
+	char buffer[1024] = { '\0' };
+	int size;
 	while (1) {
-		receivedVal = getchar();
-		getchar();// for the \n
+		size = myGetLine(buffer, 1024);
+		if (size != 1) {
+			continue;
+		}
+		receivedVal = buffer[0];
+		int queueNotEmpty = 0;
+		while (queueNotEmpty == 0) {
+			pthread_mutex_lock(&mutex);
+			if (lastElement < 2047) {
+				queueNotEmpty = 1;
+			}
+			else
+			{
+				sleep(0);
+			}
+			pthread_mutex_unlock(&mutex);
+		}
+		if (receivedVal < '1' || receivedVal > '8') {
+			continue;
+		}
 		if (receivedVal == '7') {
 			//kill all threads
-			for (int i=0;i<5;++i)
+			for (i=0;i<5;++i)
 			{
 				pthread_cancel(tid[i]);
 			}
@@ -132,7 +170,7 @@ int main(void) {
 		}
 		if (receivedVal == '8') {
 			finish=1;
-			for (int i=0;i<5;++i)
+			for (i=0;i<5;++i)
 			{
 				pthread_join(tid[i],NULL);
 			}
