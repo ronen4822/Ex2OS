@@ -1,28 +1,20 @@
-/*
- ============================================================================
- Name        : Ex2.c
- Author      : Ronen
- Version     :
- Copyright   : Your copyright notice
- Description : Hello World in C, Ansi-style
- ============================================================================
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
 #include <unistd.h>
+#include <string.h>
 
 pthread_mutex_t mutex;
 pthread_mutex_t internalCountMutex;
 
 int internal_count;
-char list[2048] = { '\0' };
+char list[50000] = { '\0' };
 int lastElement;
 int finish=0;
 
 char pop() {
+	/* return the first element of the list (the element at lastElement) */
 	char tmp;
 	pthread_mutex_lock(&mutex);
 	if (lastElement == -1) {
@@ -36,6 +28,7 @@ char pop() {
 	return tmp;
 }
 void push(char charToPush) {
+	/*add a char to the end of the queue*/
 	pthread_mutex_lock(&mutex);
 	int i;
 	for (i = lastElement + 1; i > 0 && i < sizeof(list)-1; --i) {
@@ -45,13 +38,41 @@ void push(char charToPush) {
 	lastElement++;
 	pthread_mutex_unlock(&mutex);
 }
-void* threadedFunction(void* arg) {
+void myItoa()
+{ /* reads the value of internal count, if 0- print 0 and return, else- read the value into a buffer and print the buffer */
+	int tmp=internal_count;
+	if (tmp==0)
+	{
+		write(1,"0\n",strlen("0\n"));
+		return;
+	}
+	int i=0;
+	char buffer[1024]={'\0'};
+	while (tmp != 0)
+	{
+		buffer[i]=tmp%10+'0';
+		i++;
+		tmp/=10;
+	}
+	i--; // i will go 1 value over the last element because the while checks only after i++
+	char tmpChar;
+	int j;
+	for (j=0;j<=i/2;++j)
+	{
+		tmpChar=buffer[i-j];
+		buffer[i-j]=buffer[j];
+		buffer[j]=tmpChar;
+	}
+	buffer[i+1]='\n';
+	write(1,buffer,strlen(buffer));
+}
+void* threadedFunction(void* arg) { /*reads from the queue until a non null value is received and then executes the corresponding nanosleep and addition to internal_count*/
 	while (1) {
                 char tmp = pop();
 		if (finish && tmp == '\0')
 		{
 			pthread_mutex_lock(&internalCountMutex);
-			printf("%d\n", internal_count);
+			myItoa();
 			pthread_mutex_unlock(&internalCountMutex);
 			pthread_exit(NULL);
 		}
@@ -100,7 +121,7 @@ void* threadedFunction(void* arg) {
 					break;
 				case '6':
 					pthread_mutex_lock(&internalCountMutex);
-					printf("%d\n", internal_count);
+					myItoa();
 					pthread_mutex_unlock(&internalCountMutex);
 					break;
 				default:
@@ -108,7 +129,7 @@ void* threadedFunction(void* arg) {
 				}				
 	}
 }
-int myGetLine(char* buffer, int bufferSize) {
+int myGetLine(char* buffer, int bufferSize) { /*wait until a new line is received, then put it into a char buffer and return the number of chars*/
 	int num_chars = 0;
 	int ch;
 	do {
@@ -131,7 +152,7 @@ int main(void) {
 	int i;
 	for (i = 0; i < 5; ++i) {
 		if (pthread_create(&(tid[i]), NULL, threadedFunction, NULL) != 0) {
-			printf("Failed to create thread #%d\n", i);
+			write(1,"Failed to create thread",strlen("Failed to create thread"));
 		}
 	}
 	char buffer[1024] = { '\0' };
@@ -145,7 +166,7 @@ int main(void) {
 		int queueNotEmpty = 0;
 		while (queueNotEmpty == 0) {
 			pthread_mutex_lock(&mutex);
-			if (lastElement < 2047) {
+			if (lastElement < 49999) {
 				queueNotEmpty = 1;
 			}
 			else
@@ -165,7 +186,7 @@ int main(void) {
 			}
 			pthread_mutex_destroy(&mutex);
 			pthread_mutex_destroy(&internalCountMutex);
-			printf("%d\n",internal_count);
+			myItoa();
 			exit(0);
 		}
 		if (receivedVal == '8') {
@@ -176,7 +197,7 @@ int main(void) {
 			}
 			pthread_mutex_destroy(&mutex);
 			pthread_mutex_destroy(&internalCountMutex);
-			printf("%d\n",internal_count);
+			myItoa();
 			exit(0);
 		}
 		push(receivedVal);
