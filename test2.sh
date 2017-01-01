@@ -1,7 +1,7 @@
 #!/bin/bash
 
-gmake clean
-gmake
+make clean
+make
 
 gcc mSecSleep.c -o RSleep
 
