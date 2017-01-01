@@ -1,5 +1,10 @@
 #!/bin/bash
 
+gmake clean
+gmake
+
+gcc mSecSleep.c -o RSleep
+
 echo "1
 2
 3
